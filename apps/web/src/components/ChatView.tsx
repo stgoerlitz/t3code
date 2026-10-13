@@ -491,6 +491,7 @@ import {
 } from "./chat/QueuedRunsControl";
 import { useLinkedThreadPullRequest } from "./ThreadStatusIndicators";
 import type { ComposerBannerStackItem } from "./chat/ComposerBannerStack";
+import { isFromOutsideAgent, OUTSIDE_AGENT, OutsideAgentGlyph } from "./chat/outsideAgent";
 import { ThreadStatusLine } from "./chat/ThreadStatusLine";
 import { formatRelativeTimeLabel, formatRelativeTimeUntilLabel } from "../timestampFormat";
 import { ComposerSurface } from "./chat/ComposerSurface";
@@ -2529,6 +2530,36 @@ export default function ChatView(props: ChatViewProps) {
         : activeProjectClone.phase === "done"
           ? null
           : "Repository not cloned";
+  const [dismissedOutsideAgentNotices, setDismissedOutsideAgentNotices] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const outsideAgentThreadId =
+    activeThreadShell && isFromOutsideAgent(activeThreadShell.source) ? activeThreadShell.id : null;
+  const outsideAgentBannerItem = useMemo<ComposerBannerStackItem | null>(() => {
+    if (outsideAgentThreadId === null || dismissedOutsideAgentNotices.has(outsideAgentThreadId)) {
+      return null;
+    }
+    return {
+      id: `outside-agent:${outsideAgentThreadId}`,
+      variant: "default",
+      priority: "notice",
+      icon: <OutsideAgentGlyph />,
+      title: `${OUTSIDE_AGENT.label} started this thread`,
+      description: "It checks back and reports results where you asked.",
+      actions: (
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={() => void navigate({ to: "/settings/connections" })}
+        >
+          Bot access
+        </Button>
+      ),
+      dismissLabel: "Dismiss",
+      onDismiss: () =>
+        setDismissedOutsideAgentNotices((previous) => new Set(previous).add(outsideAgentThreadId)),
+    };
+  }, [dismissedOutsideAgentNotices, navigate, outsideAgentThreadId]);
   const projectCloneBannerItem = useMemo<ComposerBannerStackItem | null>(() => {
     if (!activeProjectClone || !activeProjectRef || activeProjectClone.phase === "done") {
       return null;
@@ -7855,6 +7886,7 @@ export default function ChatView(props: ChatViewProps) {
     // The user asked for this one, so it leads the notice tier instead of trailing it.
     const usageLimitsItems = usageLimitsBanner === null ? [] : [usageLimitsBanner];
     const projectCloneItems = projectCloneBannerItem === null ? [] : [projectCloneBannerItem];
+    if (outsideAgentBannerItem !== null) projectCloneItems.push(outsideAgentBannerItem);
     if (!localCheckoutBranchMismatch || !showBranchMismatchBanner || !activeBranchMismatchKey) {
       return [
         ...feedbackBannerItems,
@@ -7925,6 +7957,7 @@ export default function ChatView(props: ChatViewProps) {
     childInputBannerItem,
     goalBannerItem,
     localCheckoutBranchMismatch,
+    outsideAgentBannerItem,
     projectCloneBannerItem,
     showBranchMismatchBanner,
     systemComposerBannerItems,

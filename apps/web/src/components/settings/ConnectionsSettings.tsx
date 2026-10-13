@@ -84,6 +84,7 @@ import { LocalEnvironmentSetting } from "./LocalEnvironmentSetting";
 import { searchableSetting } from "./settingsSearch";
 import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
 import { GrokBotSetupDialog } from "./GrokBotSetupDialog";
+import { OutsideAgentGlyph } from "../chat/outsideAgent";
 import { EnvironmentRoutesList } from "./EnvironmentRoutesList";
 import { usePreparedConnection } from "~/state/session";
 import {
@@ -991,6 +992,11 @@ const ConnectedClientListRow = memo(function ConnectedClientListRow({
               dotClassName={isLive ? "bg-success" : "bg-muted-foreground/30"}
               pingClassName={isLive ? "bg-success/60 duration-2000" : null}
             />
+            {/* CONCEPT PROTOTYPE: a shippable version recognizes the Bot from its
+                OAuth client metadata, since Grok Bot may register as "Cursor". */}
+            {clientSession.client.deviceType === "bot" && /grok/i.test(primaryLabel) ? (
+              <OutsideAgentGlyph className="size-3.5 shrink-0" />
+            ) : null}
             <h3 className="text-sm font-medium text-foreground">{primaryLabel}</h3>
             {clientSession.current ? (
               <span className="text-3xs text-muted-foreground/80 rounded-md border border-border/50 bg-muted/50 px-1 py-0.5">
